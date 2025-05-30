@@ -2,8 +2,8 @@
 #include <Adafruit_SSD1306.h>
 #include <ESP8266WiFi.h>
 #ifndef STASSID
-#define STASSID ""
-#define STAPSK ""
+#define STASSID "Wifi ssid"
+#define STAPSK "wifi password"
 #endif
 #include <WiFiClientSecure.h>
 
