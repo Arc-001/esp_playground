@@ -3,8 +3,8 @@
 #include <Adafruit_SSD1306.h>
 #include <ESP8266WiFi.h>
 #ifndef STASSID
-#define STASSID "WIFI SSID"
-#define STAPSK "WIFI PASSWORD"
+#define STASSID "wifi ssid"
+#define STAPSK "wifi password"
 #endif
 #include <WiFiClientSecure.h>
 
@@ -16,6 +16,17 @@ const char* password = STAPSK;
 #include <Wire.h>
 #include <Adafruit_GFX.h>
 #include <Adafruit_SSD1306.h>
+#include <NTPClient.h>
+#include <WiFiUdp.h>
+
+  // Define the NTP server
+const char* ntpServer = "pool.ntp.org";  // Use a public NTP server
+const long  gmtOffset_sec = 19800;       // GMT+5:30 (India)
+const int   daylightOffset_sec = 0;      // India does not observe DST
+
+WiFiUDP ntpUDP;
+NTPClient timeClient(ntpUDP, ntpServer, gmtOffset_sec, daylightOffset_sec);
+
 
 #if defined(ESP8266)
 #define BUTTON_A  0
@@ -43,9 +54,9 @@ const int httpsPort = 443;
 //get it by running the following command in terminal:
 // openssl s_client -connect api.openweathermap.org:443 -servername api.openweathermap.org
 // and copy the fingerprint from the output
-const char fingerprint[] = "Fingerprint of the server SHA-1 hash";
+const char fingerprint[] = "fingerprint";
 
-String url = "/data/2.5/weather?q=Lucknow&appid=API_KEY";
+String url = "/data/2.5/weather?q=Lucknow&appid=API_key";
 
 
 // Create an instance of the server
@@ -152,7 +163,7 @@ void setup() {
   // Start the server
   WiFiClientSecure client;
   client.setFingerprint(fingerprint);
-
+  timeClient.begin();
   //chcking the host
   if (!client.connect(host, httpsPort)) {
     display.print(F("Connection failed \n"));
@@ -201,6 +212,9 @@ void setup() {
   const char* description = doc["weather"][0]["description"];  // e.g. "clear sky"
 
   display.print(city);
+  //udate cursor position
+  display.setCursor(50, 0);
+  display.print(timeClient.getFormattedTime());
   display.print("\nTemp/Feel: ");
   display.print(tempC);
   display.print("/");
@@ -232,4 +246,20 @@ void setup() {
 }
 
 void loop() {
+  // Update the time client
+  if (timeClient.update()) {
+    // Clear only the time area
+    display.fillRect(50, 0, 80, 8, SSD1306_BLACK); // x, y, width, height, color
+    
+    // Set cursor to time position and print new time
+    display.setCursor(50, 0);
+    String hours = String(timeClient.getHours());
+    String minutes = timeClient.getMinutes() < 10 ? "0" + String(timeClient.getMinutes()) : String(timeClient.getMinutes());
+    display.print(hours + ":" + minutes);
+    
+    // Update display with just the changes
+    display.display();
+  }
+  // For example, you could refresh the weather data periodically
+  delay(10000); // Delay for 10 seconds before the next loop iteration
 }
